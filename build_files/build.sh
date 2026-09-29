@@ -21,10 +21,14 @@ dnf5 install -y tmux zsh mullvad-vpn vim nodejs npm uv ripgrep sysstat strace \
 # The rpm is downloaded to /tmp rather than handed to dnf as a URL: dnf would
 # keep it in the /var/cache cache mount, and the next local build fails on it
 # with a misleading `not a rpm`.
+#
+# It is fetched from the master server, not mirrors.rpmfusion.org: that one
+# redirects to a random mirror of the builder's country, and a dead mirror
+# (e.g. repos.eggycrew.com, still listed for the US) fails the build at random.
 for repo in free nonfree; do
 	curl --fail --silent --show-error --location \
 		--output "/tmp/rpmfusion-${repo}-release.rpm" \
-		"https://mirrors.rpmfusion.org/${repo}/fedora/rpmfusion-${repo}-release-$(rpm -E %fedora).noarch.rpm"
+		"https://download1.rpmfusion.org/${repo}/fedora/rpmfusion-${repo}-release-$(rpm -E %fedora).noarch.rpm"
 done
 dnf5 install -y /tmp/rpmfusion-free-release.rpm /tmp/rpmfusion-nonfree-release.rpm
 
