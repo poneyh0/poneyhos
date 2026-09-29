@@ -107,3 +107,54 @@ systemctl reboot
   right
 - In this dialog, you can fine tune the blur and the refraction effect for
   instance or set rounded corners for your desktop windows.
+
+## Build locally
+
+You can build the image on your own computer to test your changes before
+pushing them. All the commands below must be run on the host, not inside a
+toolbx: a toolbx has its own podman storage, and `bootc` would not see the
+image built there.
+
+- Clone the repository:
+
+```bash
+git clone https://github.com/poneyh0/poneyhos.git
+cd poneyhos
+```
+
+- Build the image as root, so it lands directly in the root containers-storage
+  where `bootc` can find it:
+
+```bash
+sudo podman build -t localhost/poneyhos:latest .
+```
+
+- Optionally, open a shell in the image to check its content:
+
+```bash
+sudo podman run --rm -it localhost/poneyhos:latest bash
+```
+
+- Switch to the local image and reboot:
+
+```bash
+sudo bootc switch --transport containers-storage localhost/poneyhos:latest
+systemctl reboot
+```
+
+- If something is wrong, go back to the previous deployment with:
+
+```bash
+sudo bootc rollback
+systemctl reboot
+```
+
+While you are on the local image, `bootc upgrade` will not pull the published
+updates. To go back to the published image, run:
+
+```bash
+sudo bootc switch ghcr.io/poneyh0/poneyhos
+```
+
+The `Justfile` also provides recipes to build virtual machine images, ISOs or
+to rechunk the image, see [docs/Justfile.md](docs/Justfile.md).
