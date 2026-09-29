@@ -1,0 +1,148 @@
+# Justfile Documentation
+
+The `Justfile` contains various commands and configurations for building and
+managing container images and virtual machine images using Podman and other
+utilities. It is also used inside Github Actions.
+
+## Required Utilities
+
+Container build:
+
+- [just](https://just.systems/man/en/introduction.html)
+- [podman](https://docs.podman.io/en/latest)
+- [git](https://git-scm.com)
+- [jq](https://jqlang.org)
+
+These are usually preinstalled on Universal Blue's Bootc Images.
+
+Linting:
+
+- shfmt
+- shellcheck
+
+## Environment Variables
+
+These are all sourced from the `image-template.env` file.
+
+- `image_name`: The name of the image (default: "poneyhos").
+- `default_tag`: The default tag for the image (default: "latest").
+- `bib_image`: The Bootc Image Builder (BIB) image (default: "quay.io/centos-bootc/bootc-image-builder:latest").
+
+## Building The Image
+
+All these recipes will work (with default values) without supplying any
+arguments to them, e.g. `just build`
+
+### `just build`
+
+Builds a container image using Podman.
+
+```bash
+just build my_image dev
+```
+
+### Rechunking
+
+We can flatten the layers of container images to make sure there isn't a
+single huge layer when your image gets published.
+This does not make your image faster to download, just provides better resumability.
+
+#### `just ostree-rechunk`
+
+Rechunks the existing Image with [rpm-ostree](https://coreos.github.io/rpm-ostree/build-chunked-oci/)
+
+```bash
+just ostree-rechunk my-image dev
+```
+
+#### `just rechunk`
+
+Rechunks the existing Image with [chunkah](https://github.com/coreos/chunkah),
+this is probably gonna be the default here at some point, try it out, it's cool.
+
+```bash
+just rechunk my-image dev
+```
+
+### Switching to the locally built image for testing
+
+The image has to be in the containers-storage owned by root, to be able to
+rebase to it, see the `_rootful_load_image` recipe.
+
+`sudo just build` and `sudo just ostree-rechunk` builds directly as root and
+allows you to skip the transfer to the root containers-storage.
+
+You can rebase to all the images that are in your containers-storage:
+
+```bash
+sudo podman image list --filter=label=containers.bootc=1
+```
+
+See [man bootc switch](https://bootc.dev/bootc/man/bootc-switch.8.html) for more info.
+
+```bash
+sudo bootc switch --transport containers-storage localhost/my-image:dev
+```
+
+and reboot your system!
+
+## Building and Running Virtual Machines and ISOs
+
+The below commands all build QCOW2 images with `run-vm-qcow2` and `spawn-vm`
+also running the built image in a vm. To produce or use a different type
+of image, substitute in the command with that type in the place of `qcow2`.
+The available types are `qcow2`, `iso`, and `raw`.
+
+### `just build-qcow2`
+
+Builds a QCOW2 virtual machine image.
+
+```bash
+just build-qcow2 my-image dev
+```
+
+### `just rebuild-qcow2`
+
+Rebuilds a QCOW2 virtual machine image.
+
+```bash
+just rebuild-vm my-image dev
+```
+
+### `just run-vm-qcow2`
+
+Runs a virtual machine from a QCOW2 image.
+
+```bash
+just run-vm-qcow2 my-image dev
+```
+
+### `just spawn-vm`
+
+Runs a virtual machine using systemd-vmspawn.
+
+```bash
+just spawn-vm 0 qcow2 6G
+```
+
+## File Management
+
+### `just check`
+
+Checks the syntax of all `.just` files and the `Justfile`.
+
+### `just fix`
+
+Fixes the syntax of all `.just` files and the `Justfile`.
+
+### `just clean`
+
+Cleans the repository by removing build artifacts.
+
+### `just lint`
+
+Runs shell check on all Bash scripts.
+
+### `just format`
+
+Runs shfmt on all Bash scripts.
