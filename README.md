@@ -1,7 +1,11 @@
 # PoneyhOS
 
-This repository build my own custom [bootc](https://github.com/bootc-dev/bootc)
-image. It is based on u-blue/Aurora with some custom packages on top of it.
+This repository builds my own custom [bootc](https://github.com/bootc-dev/bootc)
+image. It is based on `quay.io/fedora/fedora-kinoite:44` with some custom
+packages on top of it. This project also uses the incredible work done by
+Universal Blue community with [image-template](https://github.com/ublue-os/image-template)
+project to create the image and automatize through CI the distribution of the
+image.
 
 ## Community
 
