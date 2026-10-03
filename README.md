@@ -1,7 +1,11 @@
 # PoneyhOS
 
-This repository build my own custom [bootc](https://github.com/bootc-dev/bootc)
-image. It is based on u-blue/Aurora with some custom packages on top of it.
+This repository builds my own custom [bootc](https://github.com/bootc-dev/bootc)
+image. It is based on `quay.io/fedora/fedora-kinoite:44` with some custom
+packages on top of it. This project also uses the incredible work done by
+Universal Blue community with [image-template](https://github.com/ublue-os/image-template)
+project to create the image and automatize through CI the distribution of the
+image.
 
 ## Community
 
@@ -18,162 +22,139 @@ sudo bootc switch ghcr.io/poneyh0/poneyhos
 
 This should queue the image for the next reboot.
 
-## Justfile Documentation
+## How to install
 
-The `Justfile` contains various commands and configurations for building and
-managing container images and virtual machine images using Podman and other
-utilities. It is also used inside Github Actions.
+Currently, no iso image is available to install PoneyhOS.
+Here are the instructions to be able to deploy the operating system on your
+computer:
 
-### Required Utilities
-
-Container build:
-
-- [just](https://just.systems/man/en/introduction.html)
-- [podman](https://docs.podman.io/en/latest)
-- [jq](https://jqlang.org)
-
-These are usually preinstalled on Universal Blue's Bootc Images.
-
-Linting:
-
-- shfmt
-- shellcheck
-
-### Environment Variables
-
-These are all sourced from the `image-template.env` file.
-
-- `image_name`: The name of the image (default: "poneyhos").
-- `default_tag`: The default tag for the image (default: "latest").
-- `bib_image`: The Bootc Image Builder (BIB) image (default: "quay.io/centos-bootc/bootc-image-builder:latest").
-
-### Building The Image
-
-All these recipes will work (with default values) without supplying any
-arguments to them, e.g. `just build`
-
-#### `just build`
-
-Builds a container image using Podman.
+- Download the latest kinoite version 44 on [fedoraproject](https://fedoraproject.org/atomic-desktops/kinoite/download/)
+- If the download of the ISO is very slow, consider downloading via torrent on
+  [fedoraproject torrents](https://fedoraproject.org/torrents/44/)
+- Create a bootable usb key with [Fedora Image Writer](https://github.com/FedoraQt/MediaWriter)
+  with the Kinoite iso.
+- Reboot your computer and boot on the USB key.
+- Install Kinoite
+- Reboot at the end of the install and remove the USB key.
+- Continue the installation process after booting on Fedora Kinoite
+- On Kinoite, open a terminal and run the following:
 
 ```bash
-just build $target_image $tag
+sudo bootc switch ghcr.io/poneyh0/poneyhos
 ```
 
-Arguments:
-
-- `$target_image`: The tag you want to apply to the image (default: `$image_name`).
-- `$tag`: The tag for the image (default: `$default_tag`).
-
-#### Rechunking
-
-We can flatten the layers of container images to make sure there isn't a
-single huge layer when your image gets published.
-This does not make your image faster to download, just provides better resumability.
-
-##### `just ostree-rechunk`
-
-Rechunks the existing Image with [rpm-ostree](https://coreos.github.io/rpm-ostree/build-chunked-oci/)
+- Reboot your computer with:
 
 ```bash
-just ostree-rechunk $target_image $tag
+systemctl reboot
 ```
 
-##### `just rechunk`
+- Welcome to PoneyhOS!
 
-Rechunks the existing Image with [chunkah](https://github.com/coreos/chunkah),
-this is probably gonna be the default here at some point, try it out, it's cool.
+## Post-install steps
+
+### Vicinae
+
+- Open **Settings** and go to **Keyboard** and **Shortcuts**
+- Select **KRunner**
+- Expand **Launch** and uncheck **Alt + Space**
+- We recommend adding a custom shortcut with **Ctrl + Space** to **KRunner**
+  to keep a fast shortcut because of its close integration in **KDE**
+- Click on **Add New**
+- Select **Application**
+- Search for **Vicinae** and click **Ok**
+- In the panel, select **Vicinae**
+- Unfold **Toggle Vicinae Window**
+- Add custom shortcut **Alt + Space**
+
+### Glass theme
+
+#### Setup
+
+- Open **Settings** and go to **Window Management**
+- Select **Desktop Effects**
+- Uncheck **Blur**
+- Ensure **Translucency** is unchecked.
+- Check **Glass**
+- In left panel, select **Colors & Themes**
+- Select **Colors**
+- Select either **Dark** or **Light** for **Glass**
+- Click **Apply**
+- Select **Application Style** in the central panel
+- Select **Glass** and click **Apply**
+- In central panel, select **Window Decorations**
+- Select **Glass**
+
+#### Desktop Customization
+
+- In **Window Decorations** settings, click on **Edit Glass Theme...**
+- Set **Button Style** to **Small**
+- Click **Ok**
+- You can customize the location of the button by clicking on
+  **Configure Titlebar Buttons...**
+- In **Colors**, you can set up an **Accent Color**
+- In central panel, you can click on **Global Theme** and **Get New...**
+- Install a transparent theme, such as _Apple macOS Tahoe_
+- In **Global Theme** panel, select your downloaded theme
+- In the **Apply** dialog, ensure both checkboxes are checked.
+- Click on **OK**
+
+#### Glass Customization
+
+- In **Settings**, click on **Window Management**
+- In central panel, click on **Desktop Effects**
+- On the **Glass** effect, click on the **Configure** button located at the
+  right
+- In this dialog, you can fine tune the blur and the refraction effect for
+  instance or set rounded corners for your desktop windows.
+
+## Build locally
+
+You can build the image on your own computer to test your changes before
+pushing them. All the commands below must be run on the host, not inside a
+toolbx: a toolbx has its own podman storage, and `bootc` would not see the
+image built there.
+
+- Clone the repository:
 
 ```bash
-just rechunk $target_image $tag
+git clone https://github.com/poneyh0/poneyhos.git
+cd poneyhos
 ```
 
-#### Switching to the locally built image for testing
-
-The image has to be in the containers-storage owned by root, to be able to
-rebase to it, see the `_rootful_load_image` recipe.
-
-`sudo just build` and `sudo just ostree-rechunk` builds directly as root and
-allows you to skip the transfer to the root containers-storage.
-
-You can rebase to all the images that are in your containers-storage:
+- Build the image as root, so it lands directly in the root containers-storage
+  where `bootc` can find it:
 
 ```bash
-sudo podman image list --filter=label=containers.bootc=1
+sudo podman build -t localhost/poneyhos:latest .
 ```
 
-See [man bootc switch](https://bootc.dev/bootc/man/bootc-switch.8.html) for more info.
+- Optionally, open a shell in the image to check its content:
 
 ```bash
-sudo bootc switch --transport containers-storage localhost/myimage:latest
+sudo podman run --rm -it localhost/poneyhos:latest bash
 ```
 
-and reboot your system!
-
-### Building and Running Virtual Machines and ISOs
-
-The below commands all build QCOW2 images. To produce or use a different type
-of image, substitute in the command with that type in the place of `qcow2`.
-The available types are `qcow2`, `iso`, and `raw`.
-
-#### `just build-qcow2`
-
-Builds a QCOW2 virtual machine image.
+- Switch to the local image and reboot:
 
 ```bash
-just build-qcow2 $target_image $tag
+sudo bootc switch --transport containers-storage localhost/poneyhos:latest
+systemctl reboot
 ```
 
-#### `just rebuild-qcow2`
-
-Rebuilds a QCOW2 virtual machine image.
+- If something is wrong, go back to the previous deployment with:
 
 ```bash
-just rebuild-vm $target_image $tag
+sudo bootc rollback
+systemctl reboot
 ```
 
-#### `just run-vm-qcow2`
-
-Runs a virtual machine from a QCOW2 image.
+While you are on the local image, `bootc upgrade` will not pull the published
+updates. To go back to the published image, run:
 
 ```bash
-just run-vm-qcow2 $target_image $tag
+sudo bootc switch ghcr.io/poneyh0/poneyhos
 ```
 
-#### `just spawn-vm`
-
-Runs a virtual machine using systemd-vmspawn.
-
-```bash
-just spawn-vm rebuild="0" type="qcow2" ram="6G"
-```
-
-### File Management
-
-#### `just check`
-
-Checks the syntax of all `.just` files and the `Justfile`.
-
-#### `just fix`
-
-Fixes the syntax of all `.just` files and the `Justfile`.
-
-#### `just clean`
-
-Cleans the repository by removing build artifacts.
-
-#### `just lint`
-
-Runs shell check on all Bash scripts.
-
-#### `just format`
-
-Runs shfmt on all Bash scripts.
-
-## Additional resources
-
-For additional driver support, ublue maintains a set of scripts and container
-images available at [ublue-akmod](https://github.com/ublue-os/akmods). These
-images include the necessary scripts to install multiple kernel drivers within
-the container (Nvidia, OpenRazer, Framework...). The documentation provides
-guidance on how to properly integrate these drivers into your container image.
+The `Justfile` also provides recipes to build virtual machine images, ISOs or
+to rechunk the image, see [docs/Justfile.md](docs/Justfile.md).
