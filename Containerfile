@@ -21,9 +21,9 @@ RUN --mount=type=cache,dst=/var/cache \
 
 WORKDIR /src
 
-# kwin-effects-glass, version-tag 20260620-1
+# kwin-effects-glass, version-tag 20261016-6.8.0-support
 RUN git clone https://github.com/4v3ngR/kwin-effects-glass && \
-    cd kwin-effects-glass && git checkout e8ab991af172c4b2429856acd60bbcacf0e4e976 && \
+    cd kwin-effects-glass && git checkout 2ef07fa1a2a062da12289ad8de1393e01f5c1d8e && \
     cd .. && \
     cmake -S kwin-effects-glass -B kwin-effects-glass/build -DCMAKE_INSTALL_PREFIX=/usr && \
     cmake --build kwin-effects-glass/build -j"$(nproc)" && \
